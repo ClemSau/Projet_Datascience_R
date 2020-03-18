@@ -5,26 +5,37 @@ date: "09/02/2020"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+# Introduction & Initialisation de l'environnement 
+
+## Introduction
+
+### Sujet
+Le sujet consiste à séléctionner un jeu de donnée et y appliquer des modèles statistiques et des méthodes d'analyse de données tels que l'ANOVA (Analyse de la variance) et l'ACP (Analyse en composantes principales)
+
+### Desctiption du jeu de données
+
+## Initialisation de l'environnement 
+
+### Chargement des packages
+Chargement des packages utiles à l'ANOVA et à l'ACP
+
+```{r}
+library(car)
+library(multcomp)
 ```
 
-## R Markdown
+### Chargement du jeu de données
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r}
+setwd("C:/Users/clems/Desktop/HEI/HEI4/Semestre 8/Data science/Projet")
+X <- read.csv("World_Happiness_Report_2016.csv")
+summary(X)
 ```
 
-## Including Plots
+# ANOVA - Analyse de la variance
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+    boxplot(Happiness.Score~Region,data=X,xlab="Region",ylab="Happiness Score")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# ACP - Analyse en composantes principales
