@@ -1,6 +1,6 @@
 ---
 title: "Stat_Sauvage_Bourgain_Delpouve_Bousquet"
-author: "Clement"
+author: "Clement Sauvage"
 date: "09/02/2020"
 output: pdf_document
 ---
@@ -10,32 +10,90 @@ output: pdf_document
 ## Introduction
 
 ### Sujet
-Le sujet consiste à séléctionner un jeu de donnée et y appliquer des modèles statistiques et des méthodes d'analyse de données tels que l'ANOVA (Analyse de la variance) et l'ACP (Analyse en composantes principales)
+Le sujet consiste à séléctionner un jeu de donnée conséquent et y appliquer des modèles statistiques et des méthodes d'analyse de données comprenant un modèle linéaire (soit ANOVA, ANCOVA ou régression linéaire) et une ACP (Analyse en composantes principales)
 
-### Desctiption du jeu de données
+### Description du jeu de données
+
+Le jeu de données choisi est celui du "World hapiness report" (le rapport du bonheur dans le monde), il peut être trouvé sur Kaggle https://www.kaggle.com/unsdsn/world-happiness . C'est un ensemble de fichiers qui regroupe les scores attribués à chaques pays pour mesurer le bonheur de ses habitants. Les années 2015 à 2019 sont donnés dans des fichiers CSV différents, mais nous avons décider de travailler uniquement sur l'année 2016 (World_Happiness_Report_2016.csv)
+
+Pour contextualiser, les score de bonheur attribués à chaque pays correspond à une moyenne de bonheur que ressentais plusieurs de ses habitants sondés individuellements. 
+Dans les colones qui suivent, sont indiqués des scores qui indiquent la mesure dans laquelle l'éconnomie, la famille, la santé, la liberté, la confiance et la générosité contribuaient au score de bonheur pour chaque pays.
+La dernière métric est le "Dystopia Residual". Il correspond au score de bonheur moyen évalué dans une dystopie (1,85) additionné à la valeur résiduelle pour les six métrics précédentes (la valeur non expliqué du score de bonheur pour chaque pays).
+
+Les colonnes du jeu de donnés sont donc:
+* Country (FR: Pays): Le pays auquel correspond la ligne
+* Region (FR: Région): La région géographique dans laquel se situe le pays
+* Hapiness rank (FR: Rang de bonheur): Rang auquel se situe le pays lorsqu'il est comparé aux autres sur son score de bonheur
+* Hapiness score (FR: Score de bonheur): Score de bonheur attribué au pays
+* Lower confidence interval (FR: Limite basse de l'intervalle de confiance): Limite basse de l'intervalle de confiance pour le score de bonheur du pays 
+* Upper confidence interval (FR: Limite haute de l'intervalle de confiance): Limite haute de l'intervalle de confiance pour le score de bonheur du pays
+* Economy (GDP per Capita) (FR: Econnomie (PIB par habitant)): La mesure dans laquelle le PIB contribue au calcul du score de bonheur.
+* Family (FR: Famille): La mesure dans laquelle la famille contribue au calcul du score de bonheur
+* Health (Life Expectancy) (FR: Santé (éspérance de vie)): La mesure dans laquelle l'éspérance de vie contribue au calcul du score de bonheur
+* Freedom (FR: Liberté): La mesure dans laquelle la liberté contribue au calcul du score de bonheur
+* Trust (Government Corruption) (FR: Confiance (Corruption gouvernementale)): La mesure dans laquelle la corruption gouvernementale contribue au calcul du score de bonheur.
+* Generosity (FR: Générosité): La mesure dans laquelle la générosité contribue au calcul du score de bonheur.
+* Dystopia Residual (FR: Distopie résiduelle): La mesure dans laquelle la distopie résiduelle contribue au calcul du score de bonheur.
 
 ## Initialisation de l'environnement 
 
 ### Chargement des packages
-Chargement des packages utiles à l'ANOVA et à l'ACP
+Chargement des packages utiles à l'ANOVA, à l'ACP ainsi qu'un package pour obtenir le répértoire courant.
 
 ```{r}
 library(car)
 library(multcomp)
+library(rstudioapi) # Pour obtenir le répértoire de travail courant.
 ```
 
 ### Chargement du jeu de données
 
+Définissons l'environnement de travail pour R Studio. Chargeons le fichier World_Hapiness_Report_2016.csv dans la variable X et affichons un résumé des données.
+
 ```{r}
-setwd("C:/Users/clems/Desktop/HEI/HEI4/Semestre 8/Data science/Projet")
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 X <- read.csv("World_Happiness_Report_2016.csv")
 summary(X)
 ```
 
-# ANOVA - Analyse de la variance
+Pour explorer les données, affichons un boxplot (ou boite à moustache) du score de bonheur pour chaque région.
 
 ```{r}
-    boxplot(Happiness.Score~Region,data=X,xlab="Region",ylab="Happiness Score")
+boxplot(Happiness.Score~Region,data=X,xlab="Region",ylab="Happiness Score", xaxt = "n", yaxt = "n") # Boxplot sans axes
+
+axis(side = 1, labels = FALSE)
+
+## Draw y-axis.
+axis(side = 2,
+   ## Rotation des lables perpendiculaire à l'axe des y
+   las = 2,
+   ## Ajustement de la position des label de l'axe y
+   mgp = c(3, 0.75, 0))
+
+## Dessin des labels sur l'axe des x.
+text(x = 1:length(attributes(X$Region)$levels),
+   ## Décalage des labels en dessous des bougies
+   y = par("usr")[3] - 0.35,
+   ## Liste des labels
+   labels = attributes(X$Region)$levels,
+   ##Changement de la zone de clipping
+   xpd = NA,
+   ## Rotation des labels
+   srt = 35,
+   ## Ajustement de la taille de la table
+   adj = 0.965,
+   ## Réduction de la taille des lables
+   cex = 0.60)
 ```
 
+# ANOVA - Analyse de la variance
+
+
+
 # ACP - Analyse en composantes principales
+
+
+
+# Observations et conclusion
+
+

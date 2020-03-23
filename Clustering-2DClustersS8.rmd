@@ -1,0 +1,376 @@
+---
+title: '**Projet Data Science Partie Clustering : ** Méthodes KMeans, DBSCAN & CAH'
+author: "Margaux DELPOUVE"
+date: "18 Mars 2020"
+output:
+  html_document: default
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\newpage
+# 1 - Chargement des données
+
+Présentation du traitement effectué....
+
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# effacement de toutes les données éventuellement déjà chargées en mémoire
+rm(list = ls())  
+# chargement de la librairie d'algorithmes ggplot2, puis des suivantes
+library(ggplot2)       
+library(dbscan)
+library(cluster)
+library(ggdendro)
+library(factoextra)
+# lecture du fichier csv, comprenant une première ligne d'en-têtes de colonnes
+setwd("C:/Users/clems/Desktop/HEI/HEI4/Semestre 8/Data science/Projet")
+donnees <- read.csv2("2DClustersS8.csv", header=TRUE)  
+# affichage du nuage de points en 2D
+ggplot() + geom_point(data = donnees, mapping = aes(x = coordX, y = coordY))
+
+```
+Il y a visiblement 6 ou 7 clusters pour ce jeu de données
+
+\newpage
+# 2 - K-MEANS
+Utilisation de l'algorithme K-means
+On va essayer avec K=2, K=3, K=4, K=5, K=6 avec comme graine 1234
+
+## 2.a - k-means avec K=2 
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# initialisation d'une graine pour le tirage aléatoire des centres
+set.seed(1234)
+# lancement de l'algorithme Kmeans avec 2 centres
+# la variable result récupère pour chaque point le cluster dans lequel il est affecté
+# on affiche également avec system.time() le temps de traitement nécessaire à l'opération
+system.time(result <- kmeans(donnees, 2))
+# affichage du nuage de points en 2D, en colorant chaque point suivant le cluster qui lui est attribué
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color = factor(result$cluster)))
+```
+K=2 est clairement insuffisant part rapport au nombre de clusters que l’on identifie visuellement
+
+## 2.b - k-means avec K=3
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# initialisation d'une graine pour le tirage aléatoire des centres
+set.seed(1234)
+# lancement de l'algorithme Kmeans avec 2 centres
+# la variable result récupère pour chaque point le cluster dans lequel il est affecté
+# on affiche également avec system.time() le temps de traitement nécessaire à l'opération
+system.time(result <- kmeans(donnees, 3))
+# affichage du nuage de points en 2D, en colorant chaque point suivant le cluster qui lui est attribué
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color = factor(result$cluster)))
+```
+K=3 est aussi clairement insuffisant part rapport au nombre de clusters que l’on identifie visuellement
+
+## 2.c - k-means avec K=4
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# initialisation d'une graine pour le tirage aléatoire des centres
+set.seed(1234)
+# lancement de l'algorithme Kmeans avec 2 centres
+# la variable result récupère pour chaque point le cluster dans lequel il est affecté
+# on affiche également avec system.time() le temps de traitement nécessaire à l'opération
+system.time(result <- kmeans(donnees, 4))
+# affichage du nuage de points en 2D, en colorant chaque point suivant le cluster qui lui est attribué
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color = factor(result$cluster)))
+```
+K=4 est meilleur mais encore insuffisant part rapport au nombre de clusters que l’on identifie visuellement.
+
+## 2.d - k-means avec K=5
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# initialisation d'une graine pour le tirage aléatoire des centres
+set.seed(1234)
+# lancement de l'algorithme Kmeans avec 2 centres
+# la variable result récupère pour chaque point le cluster dans lequel il est affecté
+# on affiche également avec system.time() le temps de traitement nécessaire à l'opération
+system.time(result <- kmeans(donnees, 5))
+# affichage du nuage de points en 2D, en colorant chaque point suivant le cluster qui lui est attribué
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color = factor(result$cluster)))
+```
+K=5 est meilleur mais encore insuffisant ( cluster en bas a droite pas encore précis ). On remarque que la séparation entre le cluster bleu et vert n’est pas optimale (peut être séparer en 3 clusters au lieu de deux cette partie). Le cluster jaune n'est pas aussi séparé de manière optimale avec le cluster bleu.
+
+## 2.e - k-means avec K=6
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# initialisation d'une graine pour le tirage aléatoire des centres
+set.seed(1234)
+# lancement de l'algorithme Kmeans avec 2 centres
+# la variable result récupère pour chaque point le cluster dans lequel il est affecté
+# on affiche également avec system.time() le temps de traitement nécessaire à l'opération
+system.time(result <- kmeans(donnees, 6))
+# affichage du nuage de points en 2D, en colorant chaque point suivant le cluster qui lui est attribué
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color = factor(result$cluster)))
+```
+
+K=6 est bien meilleur. La séparation entre les 6 clusters semble être correcte, même si quelques points ne sont pas vraiment associés avec le bon clusters (exemple d'un point jaune à procimité du cluster vert)
+
+## 2.f - k-means avec K=6
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# initialisation d'une graine pour le tirage aléatoire des centres
+set.seed(123456789)
+# lancement de l'algorithme Kmeans avec 2 centres
+# la variable result récupère pour chaque point le cluster dans lequel il est affecté
+# on affiche également avec system.time() le temps de traitement nécessaire à l'opération
+system.time(result <- kmeans(donnees, 6))
+# affichage du nuage de points en 2D, en colorant chaque point suivant le cluster qui lui est attribué
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color = factor(result$cluster)))
+```
+K=6 avec une graine aléatoire égale à 123456789 : une graine aléatoire différente entraine un positionement aléatoire des centres initiaux différents.
+Avec un changement de graines aléatoire, le modèle de séparation n'est plus du tout optimale, alors que normalment  lorsque K est proche de la configuration optimale, l’algorithme est stable et converge vers une même solution, quelque soit la graine, ce qui n'est pas le cas ici.
+
+## 2.g - k-means avec K=7
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# initialisation d'une graine pour le tirage aléatoire des centres
+set.seed(1234)
+# lancement de l'algorithme Kmeans avec 2 centres
+# la variable result récupère pour chaque point le cluster dans lequel il est affecté
+# on affiche également avec system.time() le temps de traitement nécessaire à l'opération
+system.time(result <- kmeans(donnees, 7))
+# affichage du nuage de points en 2D, en colorant chaque point suivant le cluster qui lui est attribué
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color = factor(result$cluster)))
+```
+K=7est meilleur et semble être suffisant.
+
+## 2.h - k-means avec K=7
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# initialisation d'une graine pour le tirage aléatoire des centres
+set.seed(1234)
+# lancement de l'algorithme Kmeans avec 2 centres
+# la variable result récupère pour chaque point le cluster dans lequel il est affecté
+# on affiche également avec system.time() le temps de traitement nécessaire à l'opération
+system.time(result <- kmeans(donnees, 7))
+# affichage du nuage de points en 2D, en colorant chaque point suivant le cluster qui lui est attribué
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color = factor(result$cluster)))
+```
+K=7, résultat strictement identique avec une graine aléatoire différente (ici 123456789). 
+Une graine aléatoire différente entraine un positionement aléatoire des centres initiaux différents ( lorsque K est proche de la configuration optimale, l’algorithme est stable et converge vers une même solution, quelque soit la graine) Ainsi cette configuration semble être la plus adaptée à notre jeu de données.
+
+## 2.i - k-means avec K=8
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# initialisation d'une graine pour le tirage aléatoire des centres
+set.seed(1234)
+# lancement de l'algorithme Kmeans avec 2 centres
+# la variable result récupère pour chaque point le cluster dans lequel il est affecté
+# on affiche également avec system.time() le temps de traitement nécessaire à l'opération
+system.time(result <- kmeans(donnees, 8))
+# affichage du nuage de points en 2D, en colorant chaque point suivant le cluster qui lui est attribué
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color = factor(result$cluster)))
+```
+K=8, pire que le précédent, car la séparation entre les clusters n'est pas du tout optimale (elle découpe le cercle en bas à gauche au lieu de le considérer comme un cluster à part entière).
+
+LA MEILLEURE CONFIGURATION AVEC K-MEANS ET DONC K=7.
+
+
+\newpage
+# 3 - DBSCAN
+
+Utilisation de l'algorithme DBSCAN
+
+## 3.a - DBSCAN avec eps=5 et minPts=25
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# lancement de l'algorithme DbScan avec un epsilon(rayon) de 5, et un nombre minimal de points de 25 dans le cercle de 25
+# la variable result récupère pour chaque point le cluster dans lequel il est affecté
+# on affiche toujours avec system.time() le temps de traitement nécessaire à l'opération
+system.time(result <- dbscan(donnees, eps = 5, minPts = 25))
+# affichage du nuage de points en 2D, en colorant toujours chaque point
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color = factor(result$cluster+1)))
+```
+
+Commentez sur le résultat....
+## 3.b - DBSCAN avec eps=5 et minPts=12
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# lancement de l'algorithme DbScan avec un epsilon(rayon) de 5, et un nombre minimal de points de 12 dans le cercle de 25
+# la variable result récupère pour chaque point le cluster dans lequel il est affecté
+# on affiche toujours avec system.time() le temps de traitement nécessaire à l'opération
+system.time(result <- dbscan(donnees, eps = 5, minPts = 12))
+# affichage du nuage de points en 2D, en colorant toujours chaque point
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color = factor(result$cluster+1)))
+```
+
+Commentez sur le résultat....
+
+## 3.c - DBSCAN avec eps=10 et minPts=12
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# lancement de l'algorithme DbScan avec un epsilon(rayon) de 10, et un nombre minimal de points de 12 dans le cercle de 25
+# la variable result récupère pour chaque point le cluster dans lequel il est affecté
+# on affiche toujours avec system.time() le temps de traitement nécessaire à l'opération
+system.time(result <- dbscan(donnees, eps = 10, minPts = 12))
+# affichage du nuage de points en 2D, en colorant toujours chaque point
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color = factor(result$cluster+1)))
+```
+
+Commentez sur le résultat....
+
+## 3.d - DBSCAN avec eps=10 et minPts=4
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# lancement de l'algorithme DbScan avec un epsilon(rayon) de 10, et un nombre minimal de points de 4 dans le cercle de 25
+# la variable result récupère pour chaque point le cluster dans lequel il est affecté
+# on affiche toujours avec system.time() le temps de traitement nécessaire à l'opération
+system.time(result <- dbscan(donnees, eps = 10, minPts = 4))
+# affichage du nuage de points en 2D, en colorant toujours chaque point
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color = factor(result$cluster+1)))
+```
+
+Commentez sur le résultat....
+
+## 3.e - DBSCAN avec eps=10 et minPts=3
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# lancement de l'algorithme DbScan avec un epsilon(rayon) de 10, et un nombre minimal de points de 3 dans le cercle de 25
+# la variable result récupère pour chaque point le cluster dans lequel il est affecté
+# on affiche toujours avec system.time() le temps de traitement nécessaire à l'opération
+system.time(result <- dbscan(donnees, eps = 10, minPts =3))
+# affichage du nuage de points en 2D, en colorant toujours chaque point
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color = factor(result$cluster+1)))
+```
+
+Commentez sur le résultat....
+
+## 3.e - DBSCAN avec eps=10 et minPts=12
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# lancement de l'algorithme DbScan avec un epsilon(rayon) de 10, et un nombre minimal de points de 3 dans le cercle de 25
+# la variable result récupère pour chaque point le cluster dans lequel il est affecté
+# on affiche toujours avec system.time() le temps de traitement nécessaire à l'opération
+result <- dbscan(donnees, eps = 0.4, minPts =5.)
+# affichage du nuage de points en 2D, en colorant toujours chaque point
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color = factor(result$cluster+1)))
+```
+
+Commentez sur le résultat....
+
+\newpage
+# 4 - CAH
+
+Utilisation de l'algorithme de Clustering Ascendant Hiérarchique 
+
+## 4.a - CAH avec la méthode single et troncature à 4 clusters
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# lancement du CAH avec la méthode "single"
+system.time(model <- agnes(donnees, metric="euclidean", method= "single", stand = TRUE))
+# construction du dendrogramme correspondant
+tree <- as.dendrogram(model)
+# affichage du dendrogramme créé
+ggdendrogram(tree)
+# troncature du dendrogramme à 4 clusters
+result <- cutree(model, k = 4)
+# affichage du nuage de points en 2D, en colorant chaque point en fonction du cluster auquel il est affecté
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color=factor(result)))
+```
+Une coupure de l’arbre à 4 clusters en méthode single, le résultat n’est pas optimal, puisque le cluster rouge devrait être normalement séparer en plusieurs clusters.
+
+De plus les temps de calculs de cette méthode CAH sont également bien plus élevés que pour les méthodes K-means et DBSCAN.
+
+## 4.b - CAH avec la méthode single et troncature à 5 clusters
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# lancement du CAH avec la méthode "single"
+system.time(model <- agnes(donnees, metric="euclidean", method= "single", stand = TRUE))
+# construction du dendrogramme correspondant
+tree <- as.dendrogram(model)
+# affichage du dendrogramme créé
+ggdendrogram(tree)
+# troncature du dendrogramme à 5 clusters
+result <- cutree(model, k = 5)
+# affichage du nuage de points en 2D, en colorant chaque point en fonction du cluster auquel il est affecté
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color=factor(result)))
+```
+Une coupure de l’arbre à 5 clusters en méthode single, le résultat n’est pas optimal et n'est pas meilleur (il est même pire), puisque qu'un point est considéré comme un cluster à lui tout seul (cluster vert).
+
+## 4.c - CAH avec la méthode single et troncature à 6 clusters
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# lancement du CAH avec la méthode "single"
+system.time(model <- agnes(donnees, metric="euclidean", method= "single", stand = TRUE))
+# construction du dendrogramme correspondant
+tree <- as.dendrogram(model)
+# affichage du dendrogramme créé
+ggdendrogram(tree)
+# troncature du dendrogramme à 6 clusters
+result <- cutree(model, k = 6)
+# affichage du nuage de points en 2D, en colorant chaque point en fonction du cluster auquel il est affecté
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color=factor(result)))
+```
+Une coupure de l’arbre à 6 clusters en méthode single, le résultat est meilleure mais il n’est toujours pas optimal, puisque qu'un point  est considéré comme un cluster à lui tout seul (cluster bleu clair), mais par contre le découpage est meilleur que le précédent car il y a 2 clusters (rouge et jaune) au lieu d'un seul pour la configuration précédente
+
+## 4.d - CAH avec la méthode single et troncature à 7 clusters
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# lancement du CAH avec la méthode "single"
+system.time(model <- agnes(donnees, metric="euclidean", method= "single", stand = TRUE))
+# construction du dendrogramme correspondant
+tree <- as.dendrogram(model)
+# affichage du dendrogramme créé
+ggdendrogram(tree)
+# troncature du dendrogramme à 6 clusters
+result <- cutree(model, k = 7)
+# affichage du nuage de points en 2D, en colorant chaque point en fonction du cluster auquel il est affecté
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color=factor(result)))
+```
+Avec une coupure à 7 clusters en méthode single, le résultat n’est pas meilleur, il est même pire avec un point isolé supplémentaire (cluster bleu).
+
+La méthode single ne semble pas être la méthode adaptée pour notre jeu de données.
+
+## 4.e - CAH avec la méthode complete et troncature à 6 clusters
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# lancement du CAH avec la méthode "complete"
+system.time(model <- agnes(donnees, metric="euclidean", method= "complete", stand = TRUE))
+# construction du dendrogramme correspondant
+tree <- as.dendrogram(model)
+# affichage du dendrogramme créé
+ggdendrogram(tree)
+# troncature du dendrogramme à 6 clusters
+result <- cutree(model, k = 6)
+# affichage du nuage de points en 2D, en colorant chaque point en fonction du cluster auquel il est affecté
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color=factor(result)))
+```
+Avec une coupure à 6 clusters en méthode complete, le résultat n'est pas meilleur. Même si la séparation des clusters vert rouge et jaune semble être acceptable, à présent la séparation du cluster bleu n'est plus optimale.
+
+## 4.f - CAH avec la méthode average et troncature à 6 clusters
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# lancement du CAH avec la méthode "average"
+system.time(model <- agnes(donnees, metric="euclidean", method= "average", stand = TRUE))
+# construction du dendrogramme correspondant
+tree <- as.dendrogram(model)
+# affichage du dendrogramme créé
+ggdendrogram(tree)
+# troncature du dendrogramme à 6 clusters
+result <- cutree(model, k = 6)
+# affichage du nuage de points en 2D, en colorant chaque point en fonction du cluster auquel il est affecté
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color=factor(result)))
+```
+Avec une coupure à 6 clusters en méthode average, le résultat n'est pas meilleur, il est même pire (la séparation des clusters n'est plus du tout optimale)
+
+## 4.g - CAH avec la méthode ward et troncature à 6 clusters
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# lancement du CAH avec la méthode "ward"
+system.time(model <- agnes(donnees, metric="euclidean", method= "ward", stand = TRUE))
+# construction du dendrogramme correspondant
+tree <- as.dendrogram(model)
+# affichage du dendrogramme créé
+ggdendrogram(tree)
+# troncature du dendrogramme à 6 clusters
+result <- cutree(model, k = 6)
+# affichage du nuage de points en 2D, en colorant chaque point en fonction du cluster auquel il est affecté
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color=factor(result)))
+```
+Avec une coupure à 6 clusters en méthode de ward, le résultat est meilleur. La séparation des clusters est plus optimale. Même si le cluster rouge devrait être séparer en 2 clusters différents.
+
+## 4.h - CAH avec la méthode ward et troncature à 7 clusters
+```{r echo=TRUE,message=FALSE,fig.align='center',warning=FALSE,out.height='50%',out.width='50%'}
+# lancement du CAH avec la méthode "ward"
+system.time(model <- agnes(donnees, metric="euclidean", method= "ward", stand = TRUE))
+# construction du dendrogramme correspondant
+tree <- as.dendrogram(model)
+# affichage du dendrogramme créé
+ggdendrogram(tree)
+# troncature du dendrogramme à 6 clusters
+result <- cutree(model, k = 7)
+# affichage du nuage de points en 2D, en colorant chaque point en fonction du cluster auquel il est affecté
+ggplot(data = donnees, mapping = aes(x = coordX, y = coordY)) + geom_point(aes(color=factor(result)))
+```
+Avec une coupure à 7 clusters en méthode de ward, le résultat est encore meilleur. La séparation des clusters est encore plus optimale. On peut à présent distinguer de manière précise les 7 clusters.
+Cette configuration semble être la plus adapatée a notre jeu de données.
+
+\newpage
+# 5 - Conclusion
+
+La meilleure calgorithme est l'utilisation de CAH avec la méthode ward et troncature à 7 clusters puis l'utilisation de K-means avec K=7.
