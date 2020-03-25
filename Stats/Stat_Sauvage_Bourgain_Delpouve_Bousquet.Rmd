@@ -1,0 +1,296 @@
+---
+title: "Stat_Sauvage_Bourgain_Delpouve_Bousquet2"
+author: "Clement Sauvage"
+date: "24/03/2020"
+output: pdf_document
+---
+
+# Introduction & Initialisation de l'environnement 
+
+## Introduction
+
+### Sujet
+Le sujet consiste à séléctionner un jeu de donnée conséquent et y appliquer des modèles statistiques et des méthodes d'analyse de données comprenant un modèle linéaire (soit ANOVA, ANCOVA ou régression linéaire) et une ACP (Analyse en composantes principales)
+
+### Description du jeu de données
+
+Le jeu de données choisi à été trouvé sur kaggle https://www.kaggle.com/shivam2503/diamonds. C'est un fichier csv qui regroupe les caractéristiques et le prix de 53940 diamants.
+
+Les colonnes du jeu de données sont:
+
+* carat: La masse en carat du diamant (pureté)
+
+* cut: La qualité de la coupe du diamant (ordonnés de la moins bonne à la meilleur : [Fair, Good, Ideal, Premium, Very Good])
+
+* couleur: La couleur du diamant sur l'échelle du GIA (dans le dataset elles vont de D à J, avec D étant la meilleur et J la moins bonne)
+
+* clarity: La clareté du diamant, soit la manière dont les inclusions sont observables à travers celui-ci (ordonnés de la meilleur à la moins bonne : [FL,IF, VVS1, VVS2, VS1, VS2, SI1, SI2, I1, I2, I3])
+
+* depth: La profondeur du diamant en %, elle est calculé en mesurant la hauteur du diamant à partir du culet du diamant jusqu'à sa table, le tout divisé par la moyenne des diamètres des ceintures du diamant.
+
+* table: La table du diamant en %, elle est calculé en exprimant la largeur de la table du diamant en un pourcentage de son diamètre moyen
+
+* price: Le prix du diamant
+
+* x: La longueur du diamant en mm
+
+* y: La largeur du diamant en mm
+
+* z: La profondeur du diamant en mm
+
+### Problèmes abordés et plan du compte rendu
+
+Dans un premier temps, noux explorerons la plupart des attribut du dataset, relativement au prix du diamant pour checher des premières interactions significatives.
+
+Ensuite des ANOVAs (Analyse de la variance) vont être réaliser pour
+
+Et enfin, une ACP (Analyse en composantes principales) ca être réalisé pour
+
+## Initialisation de l'environnement 
+
+### Chargement des packages
+
+Chargement des packages utiles à l'ANOVA, à l'ACP ainsi qu'un package pour obtenir le répértoire courant.
+
+```{r}
+library(car)
+library(multcomp)
+library(FactoMineR)
+library(ggplot2)
+library(rstudioapi) # Pour obtenir le répértoire de travail courant.
+```
+
+### Chargement du jeu de données
+
+Définissons l'environnement de travail pour R Studio. Chargeons le fichier diamonds.csv dans la variable X et affichons un résumé des données.
+
+```{r}
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+X <- read.csv("diamonds.csv")
+summary(X)
+```
+
+"Cut", "color", et "clarity" sont correctement considérés comme des facteurs car ce sont des valiables qualitatives, les autres variables "carat", "depth", "table", "x", "y" et "z" sont elles correctement considérés comme des valeurs numériques car ce sont des variables quantitatives.
+
+\newpage
+
+# Exploration analytique des données au travers de graphiques
+
+## Scatterplot du prix des diamants en fonction de leurs masses en carat
+
+```{r}
+stripchart(price~carat,data=X, vertical=TRUE, xlab="Carat",ylab="Prix")
+```
+
+On observe rapidement qu'une masse en carat basse implique un prix souvent bas aussi, cependant, au plus la masse en carat augmente, au plus l'étendue possible des prix des diamants est large, même se elle tends à augmenter aussi.
+
+On observe aussi que des valeurs de carat semblent disposer de beaucoup plus d'observations, comme par exemple 1 carat, 1.5 carat et 2 carat. C'est probablement simplement dût à des biais dans la mesure de la pureté du diamant.
+
+## Boxplot du prix des diamants pour chaque qualité de coupe
+
+```{r}
+boxplot(price~cut,data=X,xlab="Coupe",ylab="Prix")
+```
+
+On observe que la qualité de la coupe semble avoir une influence très faible sur le prix du diamant. En effet, d'une qualité de coupe à l'autre, la médiane ne varie que très peu, de même pour le premier quartile et le troisième quartile.
+
+## Boxplot du prix des diamants pour les différentes couleurs
+
+```{r}
+boxplot(price~color,data=X,xlab="Couleur",ylab="Prix")
+```
+
+Contrairement à ce à quoi on pourrait s'attendre, les couleurs les moins appréciés semblent être liés à un prix de diamant plus elevé. C'est peu être expliquable par le fait que les diamant qui présentes des caractéristiques exceptionnelles autres que la couleurs (et donc qui valent cher) sont très rare et pour les obtenir, des concesions sont faites quant à la couleur du diamant.
+
+## Boxplot des prix pour les différentes Claretés 
+
+```{r}
+# On fait en sorte d''afficher les claretés de façon ordonné
+X$clarity <- factor(X$clarity, levels=c("FL","IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1", "I2", "I3"))
+boxplot(price~clarity,data=X,xlab="Clareté",ylab="Prix")
+```
+
+On observe que les prix semblent plus élevés pour des claretés de diamants dans la moyenne. Pour les valeurs de clareté extrème dans le bon et le mauvais, les prix sont plus bas. C'est possiblement dût au même effet de concession expliqué dans la partie du boxplot du prix des diamants pour les différentes couleurs
+
+C'est peut être aussi du à un nombre d'observations plus élevés dans les claretés moyennes.
+
+## Histogramme de la part du jeu de données occupé par chaque grade de clareté
+
+```{r}
+barplot(prop.table(table(X$clarity)))
+```
+
+L'histogramme valide l'hypothèse énnoncé précédamment, c'est à dire que des grades de claretés dans la moyennes sont beaucoup plus fréquents que ceux dans les valeurs extrèmes. Ainsi on se permet de nuancer l'influence de la clareté du diamant dans son prix, de même pour d'autres facteurs qui peuvent présenter ce biais de recenssement.
+
+## Scatterplot des prix des diamants en fonction de leur largeur (x en mm)
+
+```{r}
+stripchart(price~x,data=X, vertical=TRUE, xlab="Largeur (x en mm)",ylab="Prix")
+```
+
+On observe très clairement qu'une valeur faible pour la largeur du diamant implique que son prix est probablement faible. Lorsque la largeur du diamant augmente, son prix tends aussi à augmenter mais l'étendue des prix se fait alors plus large.
+
+## Scatterplot des prix des diamants en fonction de leur longueur (y en mm)
+
+```{r}
+stripchart(price~y,data=X, vertical=TRUE, xlab="Longueur (y en mm)",ylab="Prix")
+```
+
+On observe très clairement qu'une valeur faible pour la largeur du diamant implique que son prix est probablement faible. Lorsque la longueur du diamant augmente, son prix tends aussi à augmenter mais l'étendue des prix se fait alors plus large.
+
+## Scatterplot des prix des diamants en fonction de leur profondeur (z en mm)
+
+```{r}
+stripchart(price~z,data=X, vertical=TRUE, xlab="Profondeur (z en mm)",ylab="Prix")
+```
+
+On observe très clairement qu'une valeur faible pour la longueur du diamant implique que son prix est probablement faible. Lorsque la longueur du diamant augmente, son prix tends aussi à augmenter mais l'étendue des prix se fait alors plus large.
+
+## Scatterplot des prix des diamants en fonction des profondeurs en %
+
+```{r}
+stripchart(price~depth,data=X, vertical=TRUE, xlab="Profondeur",ylab="Prix")
+```
+
+On observe comme avec la clareté des diamants que les diamants aux prix les plus elevés tendent à se trouver dans les valeurs de profondeur en % centrales. C'est aussi dans ces valeurs que se trouve la plus grande densité d'observation (probablement que ce % correspond à une coupe plus standard de diamant) donc ce graphique ne nous permet de tirer aucune conclusion +.
+
+## Scatterplot des profondeurs en % des diamants
+
+```{r}
+plot(X$depth)
+```
+
+On verifie ici que la majorité des diamants ont une profondeur en % aux alentours de 58 à 64, c'est donc normal que l'on y trouve les spécimènes avec les prix les plus élevés.
+
+## Scatterplot des prix des diamants en fonction des table en % 
+
+```{r}
+stripchart(price~table,data=X, vertical=TRUE, xlab="Table",ylab="Prix")
+```
+
+La grande majorités des observations sont regroupés à certaines valeurs de table en % des diamants. Ce graphique ne nous permet pas de tirer quelconque information intéréssante de cette variable.
+
+\newpage
+
+# ANOVA
+
+Réalisation de l'anova avec les variables ainsi que leurs interactions.
+
+```{r}
+ m1 <- aov(price ~ carat + cut + color + clarity + depth + table + x + y + z + carat:cut + carat:color + carat:clarity + carat:depth + carat:table + carat:x + carat:y + carat:z + cut:color + cut:clarity + cut:depth + cut:table + cut:x + cut:y + cut:z + color:clarity + color:depth + color:table + color:x + color:y + color:z + clarity:depth + clarity:table + clarity:x + clarity:y + clarity:z + depth:table + depth:x + depth:y + depth:z + table:x + table:y + table:z + x:y + x:z + y:z, data= X)
+```
+
+## Vérification des conditions d'application
+
+Avant de poursuivre, il faut d'abord vérifier les conditions d'application.
+
+### Graphique des résidus en fonction des prédictions
+
+```{r}
+  plot(rstudent(m1)~fitted(m1))
+  abline(h=0,lty="dotted")
+```
+
+On observe un entonnoir ce qui remet en question la qualité de l'ANOVA 
+
+### Graphique quantile quantile des résidus
+
+```{r}
+  qqnorm(residuals(m1))
+  qqline(residuals(m1))
+```
+
+Les points s'élognent trop de la droite, ce qui combiné à l'observation précédente invalide les conditions d'application.
+
+## Nouvelle ANOVA
+
+Pour résoudre le problème des conditions d'applications nous allons utiliser la fonction logarithme de base 10 sur la variable y à savoir le prix.
+
+```{r}
+  m2 <- aov(log10(price) ~ carat + cut + color + clarity + depth + table + x + y + z + carat:cut + carat:color + carat:clarity + carat:depth + carat:table + carat:x + carat:y + carat:z + cut:color + cut:clarity + cut:depth + cut:table + cut:x + cut:y + cut:z + color:clarity + color:depth + color:table + color:x + color:y + color:z + clarity:depth + clarity:table + clarity:x + clarity:y + clarity:z + depth:table + depth:x + depth:y + depth:z + table:x + table:y + table:z + x:y + x:z + y:z, data= X)
+```
+
+### Graphique des résidus en fonction des prédictions
+
+```{r}
+  plot(rstudent(m2)~fitted(m2))
+  abline(h=0,lty="dotted")
+```
+
+Les résidus en fonction des prédictions sont plus constantes et aparaissent comme dans un tunnel sur le graphique. C'est un point positif pour notre nouvelle ANOVA.
+
+### Graphique quantile quantile des résidus
+
+```{r}
+  qqnorm(residuals(m2))
+  qqline(residuals(m2))
+```
+
+Les résidus suivent bien mieux la droite sur le graphique quantile quantile. Comme pour le graphique des résidus en fonction des prédictions, quelques valeurs sont séparés de la majorité mais elles sont rares et peuvent être qualifiés de "outilers" ou en français "valeurs aberrentes".
+
+Globalement les conditions d'applications sont correctes pour notre nouvelle ANOVA, nous pouvons alors interpréter les résultats.
+
+## Résultats de l'ANOVA
+
+```{r}
+summary(m2)
+```
+
+Retirons les variables et les interactions qui ne sont pas statistiquement significatives, pour ça nous effectuons une nouvelle ANOVA en retirant les variables et les interactions dont la p-value dans la seconde ANOVA est supérieur à 0.05 (p-value > 0.05), ici "depth:x" et "table:x".
+
+```{r}
+  m3 <- aov(log10(price) ~ carat + cut + color + clarity + depth + table + x + y + z + carat:cut + carat:color + carat:clarity + carat:depth + carat:table + carat:x + carat:y + carat:z + cut:color + cut:clarity + cut:depth + cut:table + cut:x + cut:y + cut:z + color:clarity + color:depth + color:table + color:x + color:y + color:z + clarity:depth + clarity:table + clarity:x + clarity:y + clarity:z + depth:table  + depth:y + depth:z  + table:y + table:z + x:y + x:z + y:z, data= X)
+```
+
+```{r}
+summary(m3)
+```
+
+Répétons le précédé pour retirer les variables et les interactions qui ne sont pas statistiquement significatives. Ici nous retirons "depth:y" et "table:y"
+
+```{r}
+  m4 <- aov(log10(price) ~ carat + cut + color + clarity + depth + table + x + y + z + carat:cut + carat:color + carat:clarity + carat:depth + carat:table + carat:x + carat:y + carat:z + cut:color + cut:clarity + cut:depth + cut:table + cut:x + cut:y + cut:z + color:clarity + color:depth + color:table + color:x + color:y + color:z + clarity:depth + clarity:table + clarity:x + clarity:y + clarity:z + depth:table + depth:z   + table:z + x:y + x:z + y:z, data= X)
+```
+
+```{r}
+summary(m4)
+```
+
+Répétons le précédé pour retirer les variables et les interactions qui ne sont pas statistiquement significatives. Ici nous retirons "x:z".
+
+```{r}
+  m5 <- aov(log10(price) ~ carat + cut + color + clarity + depth + table + x + y + z + carat:cut + carat:color + carat:clarity + carat:depth + carat:table + carat:x + carat:y + carat:z + cut:color + cut:clarity + cut:depth + cut:table + cut:x + cut:y + cut:z + color:clarity + color:depth + color:table + color:x + color:y + color:z + clarity:depth + clarity:table + clarity:x + clarity:y + clarity:z + depth:table + depth:z   + table:z + x:y + y:z, data= X)
+```
+
+```{r}
+summary(m5)
+```
+
+## Afficher le R²
+
+La fonction aov n'affiche pas le R² de notre ANOVA, nous pouvons alors le calculer.
+
+```{r}
+  # D'abord : les SCE
+  SCE <- summary(m5)[[1]][["Sum Sq"]]
+  # Calcul du R²
+  sum(SCE[1:(length(SCE)-1)])/sum(SCE)
+```
+
+Le R² de notre ANOVA est de 0.9872496, ce qui est un très bon résultat. 
+
+Notre modèle est très probablement bon, même si il ne faut pas oublier qu'un R² élevé peut signifier que notre modèle est biaisé, sénario dont nous pouvons nuancer la possibilité car nous avons un jeu de données de plus de +50000 observations.
+
+Cela n'empêche pas qu'un possible biais du jeu de données se trouve par exemple dans la collecte de données: on pensera nottament au fait que dans notre jeu de données, les seules couleurs présentes vont de D à J quant l'échelle du GIA classifie les diamants de D à Z.
+
+\newpage
+
+## Comparaison par paires
+
+
+
+# Réalisation de l'ACP
+```{r ,fig.width=6, fig.height=3.8}
+  par(mfrow=c(1,2))
+  ACP1 <- PCA(X1)
+```
