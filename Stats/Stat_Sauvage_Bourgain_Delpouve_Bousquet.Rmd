@@ -1,7 +1,7 @@
 ---
-title: "Stat_Sauvage_Bourgain_Delpouve_Bousquet2"
-author: "Clement Sauvage"
-date: "24/03/2020"
+title: "Stat_Sauvage_Bourgain_Delpouve_Bousquet"
+author: "Clément SAUVAGE - Margaux DELPOUVE - Bousquet  Marie BOUSQUET - Clarisse BOURGAIN"
+date: "Février 2020"
 output: pdf_document
 ---
 
@@ -22,7 +22,7 @@ Les colonnes du jeu de données sont:
 
 * cut: La qualité de la coupe du diamant (ordonnés de la moins bonne à la meilleur : [Fair, Good, Ideal, Premium, Very Good])
 
-* couleur: La couleur du diamant sur l'échelle du GIA (dans le dataset elles vont de D à J, avec D étant la meilleur et J la moins bonne)
+* color: La couleur du diamant sur l'échelle du GIA (dans le dataset elles vont de D à J, avec D étant la meilleur et J la moins bonne)
 
 * clarity: La clareté du diamant, soit la manière dont les inclusions sont observables à travers celui-ci (ordonnés de la meilleur à la moins bonne : [FL,IF, VVS1, VVS2, VS1, VS2, SI1, SI2, I1, I2, I3])
 
@@ -42,9 +42,9 @@ Les colonnes du jeu de données sont:
 
 Dans un premier temps, noux explorerons la plupart des attribut du dataset, relativement au prix du diamant pour checher des premières interactions significatives.
 
-Ensuite des ANOVAs (Analyse de la variance) vont être réaliser pour
+Ensuite une ANOVA va être réaliser pour tenter d'expliquer le prix des diamants en fonction de plusieurs de ses caractéristiques.
 
-Et enfin, une ACP (Analyse en composantes principales) ca être réalisé pour
+Et enfin, une ACP (Analyse en composantes principales) ca être réalisé pour identifier les variables qui ont sont dimensionnellement proches et qui pourraient éventuellement servir pour une réduction dimensionnel du jeu de données.
 
 ## Initialisation de l'environnement 
 
@@ -57,6 +57,7 @@ library(car)
 library(multcomp)
 library(FactoMineR)
 library(ggplot2)
+library(dplyr)
 library(rstudioapi) # Pour obtenir le répértoire de travail courant.
 ```
 
@@ -65,12 +66,19 @@ library(rstudioapi) # Pour obtenir le répértoire de travail courant.
 Définissons l'environnement de travail pour R Studio. Chargeons le fichier diamonds.csv dans la variable X et affichons un résumé des données.
 
 ```{r}
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 X <- read.csv("diamonds.csv")
 summary(X)
 ```
 
 "Cut", "color", et "clarity" sont correctement considérés comme des facteurs car ce sont des valiables qualitatives, les autres variables "carat", "depth", "table", "x", "y" et "z" sont elles correctement considérés comme des valeurs numériques car ce sont des variables quantitatives.
+
+Nous voulons que les claretés s'affichent dans l'ordre de la moins bonne à la meilleur, nous réalisons le changement dans le jeu de données:
+
+```{r}
+# On fait en sorte d''afficher les claretés de façon ordonné
+X$clarity <- factor(X$clarity, levels=c("FL","IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1", "I2", "I3"))
+```
 
 \newpage
 
@@ -105,8 +113,6 @@ Contrairement à ce à quoi on pourrait s'attendre, les couleurs les moins appr�
 ## Boxplot des prix pour les différentes Claretés 
 
 ```{r}
-# On fait en sorte d''afficher les claretés de façon ordonné
-X$clarity <- factor(X$clarity, levels=c("FL","IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1", "I2", "I3"))
 boxplot(price~clarity,data=X,xlab="Clareté",ylab="Prix")
 ```
 
@@ -174,10 +180,14 @@ La grande majorités des observations sont regroupés à certaines valeurs de ta
 
 # ANOVA
 
+Au vu des résultats de l'exploration analytique des données, les variables "carity", "depth" et "table" ne semblent pas pertinentes pour expliquer le prix du diamant.
+
+Nous alons alors réaliser l'ANOVA pour tenter d'expliquer les prix des diamants en fonction des variables "carat", "cut", "color", "x", "y" et "z", ainsi que leurs interactions.
+
 Réalisation de l'anova avec les variables ainsi que leurs interactions.
 
 ```{r}
- m1 <- aov(price ~ carat + cut + color + clarity + depth + table + x + y + z + carat:cut + carat:color + carat:clarity + carat:depth + carat:table + carat:x + carat:y + carat:z + cut:color + cut:clarity + cut:depth + cut:table + cut:x + cut:y + cut:z + color:clarity + color:depth + color:table + color:x + color:y + color:z + clarity:depth + clarity:table + clarity:x + clarity:y + clarity:z + depth:table + depth:x + depth:y + depth:z + table:x + table:y + table:z + x:y + x:z + y:z, data= X)
+ m1 <- aov(price ~ carat + cut + color + x + y + z + carat:cut + carat:color + carat:x + carat:y + carat:z + cut:color + cut:x + cut:y + cut:z + color:x + color:y + color:z + x:y + x:z + y:z, data= X)
 ```
 
 ## Vérification des conditions d'application
@@ -204,10 +214,10 @@ Les points s'élognent trop de la droite, ce qui combiné à l'observation préc
 
 ## Nouvelle ANOVA
 
-Pour résoudre le problème des conditions d'applications nous allons utiliser la fonction logarithme de base 10 sur la variable y à savoir le prix.
+Pour résoudre le problème des conditions d'applications nous allons utiliser la fonction logarithme de base 10 sur la variable à expliquer, à savoir le prix.
 
 ```{r}
-  m2 <- aov(log10(price) ~ carat + cut + color + clarity + depth + table + x + y + z + carat:cut + carat:color + carat:clarity + carat:depth + carat:table + carat:x + carat:y + carat:z + cut:color + cut:clarity + cut:depth + cut:table + cut:x + cut:y + cut:z + color:clarity + color:depth + color:table + color:x + color:y + color:z + clarity:depth + clarity:table + clarity:x + clarity:y + clarity:z + depth:table + depth:x + depth:y + depth:z + table:x + table:y + table:z + x:y + x:z + y:z, data= X)
+  m2 <- aov(log10(price) ~ carat + cut + color + x + y + z + carat:cut + carat:color + carat:x + carat:y + carat:z + cut:color + cut:x + cut:y + cut:z + color:x + color:y + color:z + x:y + x:z + y:z, data= X)
 ```
 
 ### Graphique des résidus en fonction des prédictions
@@ -236,34 +246,14 @@ Globalement les conditions d'applications sont correctes pour notre nouvelle ANO
 summary(m2)
 ```
 
-Retirons les variables et les interactions qui ne sont pas statistiquement significatives, pour ça nous effectuons une nouvelle ANOVA en retirant les variables et les interactions dont la p-value dans la seconde ANOVA est supérieur à 0.05 (p-value > 0.05), ici "depth:x" et "table:x".
+Retirons les variables et les interactions qui ne sont pas statistiquement significatives, pour ça nous effectuons une nouvelle ANOVA en retirant les variables et les interactions dont la p-value dans la seconde ANOVA est supérieur à 0.05 (p-value > 0.05), ici "carat:y".
 
 ```{r}
-  m3 <- aov(log10(price) ~ carat + cut + color + clarity + depth + table + x + y + z + carat:cut + carat:color + carat:clarity + carat:depth + carat:table + carat:x + carat:y + carat:z + cut:color + cut:clarity + cut:depth + cut:table + cut:x + cut:y + cut:z + color:clarity + color:depth + color:table + color:x + color:y + color:z + clarity:depth + clarity:table + clarity:x + clarity:y + clarity:z + depth:table  + depth:y + depth:z  + table:y + table:z + x:y + x:z + y:z, data= X)
+  m3 <- aov(log10(price) ~ carat + cut + color + x + y + z + carat:cut + carat:color + carat:x + carat:z + cut:color + cut:x + cut:y + cut:z + color:x + color:y + color:z + x:y + x:z + y:z, data= X)
 ```
 
 ```{r}
 summary(m3)
-```
-
-Répétons le précédé pour retirer les variables et les interactions qui ne sont pas statistiquement significatives. Ici nous retirons "depth:y" et "table:y"
-
-```{r}
-  m4 <- aov(log10(price) ~ carat + cut + color + clarity + depth + table + x + y + z + carat:cut + carat:color + carat:clarity + carat:depth + carat:table + carat:x + carat:y + carat:z + cut:color + cut:clarity + cut:depth + cut:table + cut:x + cut:y + cut:z + color:clarity + color:depth + color:table + color:x + color:y + color:z + clarity:depth + clarity:table + clarity:x + clarity:y + clarity:z + depth:table + depth:z   + table:z + x:y + x:z + y:z, data= X)
-```
-
-```{r}
-summary(m4)
-```
-
-Répétons le précédé pour retirer les variables et les interactions qui ne sont pas statistiquement significatives. Ici nous retirons "x:z".
-
-```{r}
-  m5 <- aov(log10(price) ~ carat + cut + color + clarity + depth + table + x + y + z + carat:cut + carat:color + carat:clarity + carat:depth + carat:table + carat:x + carat:y + carat:z + cut:color + cut:clarity + cut:depth + cut:table + cut:x + cut:y + cut:z + color:clarity + color:depth + color:table + color:x + color:y + color:z + clarity:depth + clarity:table + clarity:x + clarity:y + clarity:z + depth:table + depth:z   + table:z + x:y + y:z, data= X)
-```
-
-```{r}
-summary(m5)
 ```
 
 ## Afficher le R²
@@ -272,25 +262,150 @@ La fonction aov n'affiche pas le R² de notre ANOVA, nous pouvons alors le calcu
 
 ```{r}
   # D'abord : les SCE
-  SCE <- summary(m5)[[1]][["Sum Sq"]]
+  SCE <- summary(m3)[[1]][["Sum Sq"]]
   # Calcul du R²
   sum(SCE[1:(length(SCE)-1)])/sum(SCE)
 ```
 
-Le R² de notre ANOVA est de 0.9872496, ce qui est un très bon résultat. 
+Le R² de notre ANOVA est de 0.9542744, ce qui est un très bon résultat. 
 
 Notre modèle est très probablement bon, même si il ne faut pas oublier qu'un R² élevé peut signifier que notre modèle est biaisé, sénario dont nous pouvons nuancer la possibilité car nous avons un jeu de données de plus de +50000 observations.
 
 Cela n'empêche pas qu'un possible biais du jeu de données se trouve par exemple dans la collecte de données: on pensera nottament au fait que dans notre jeu de données, les seules couleurs présentes vont de D à J quant l'échelle du GIA classifie les diamants de D à Z.
 
+Mais globalement, le prix des diamant peut s'expliquer par les variables "carat", "cut", "color" ainsi que ses dimensions.
+
 \newpage
 
-## Comparaison par paires
+# ACP
 
+## Rôle des variables dans l'ACP
 
+Dans notre ACP, les variables actives vont être "depth", "table", "x" ,"y", et "z". 
 
-# Réalisation de l'ACP
+Les variables "cut", "color" et "clarity" seront prises en compte comme des variables supplémentaires qualitatives, la variable "price" sera prise comme variable supplémentaire quantitative.
+
+## Graphiques préliminaires à l'ACP
+
+### Nuages de points des variables actives
+
+Pour avoir une première idée des liens entre les variables actives, des nuages des points sont réalisés. Ici, l'échelle logarithmique est utilisée sur tous les graphiques, sur tous les axes. Si on ne voulait pas avoir d'échelle logarithmique, on ne mettrait pas l'option `log="xy"`
+
+```{r , fig.width=8, fig.height=4}
+# Affichage de 2 graphiques par ligne
+par(mfrow=c(1,2))
+# Définition des variables actives
+variables_actives <- list("depth", "table", "x", "y", "z")
+# Parcourir les colonnes avec les variables actives
+for (variable1 in variables_actives){
+  for (variable2 in variables_actives){
+    if(! identical(variable1, variable2)) {
+      plot(X[,variable1],X[,variable2],log="xy",
+      xlab=variable1,ylab=variable2)
+    } 
+  }
+}
+```
+
+### Nuages de points du prix en fonction des variables actives
+
+Pour voir si le prix est lié aux variables actives, des nuages de points sont réalisés. De nouveau, on utilise une échelle logarithmique pour les axes.
+
+```{r , fig.width=8, fig.height=9}
+# Affichage de 2 graphiques par ligne
+par(mfrow=c(1,2))
+for (variable1 in variables_actives){
+    plot(X[,variable1],X[,"price"],log="xy",
+      xlab=variable1,ylab="Prix")
+}
+```
+
+## Analyse en composante principale
+
+### Préparation des données
+
+Nous allons réaliser une première ACP, avec seulement les variables actives. Nous allons créer le jeu de données avec le logarithme népérien de ces variables.
+
+```{r}
+  X1 <- log(select(X, depth, table, x, y, z))
+  names(X1) <- paste("ln",names(X1),sep="_")
+  summary(X1)
+```
+
+dût à la transformation des données avec la fonction logarithme, des valeurs négative infinies se sont glissés dans les données, il faut alors supprimer les ligne correspondantes.
+
+```{r}
+X1[X1==-Inf]<-NA
+X1 <- na.omit(X1)
+summary(X1)
+```
+ 
+### Réalisation de l'ACP
+
 ```{r ,fig.width=6, fig.height=3.8}
   par(mfrow=c(1,2))
   ACP1 <- PCA(X1)
 ```
+
+## Résultats de l'ACP
+
+```{r}
+round(ACP1$eig, 4)
+```
+
+### Résultats concernant les variables
+
+#### Contributions
+
+```{r}
+  round(ACP1$var$contrib,4)
+```
+
+#### cos²
+
+```{r}
+  round(ACP1$var$cos2,4)
+```
+
+#### Coordonnées
+
+```{r}
+  round(ACP1$var$coord,4)
+```
+
+## Graphiques
+
+Affichons les axes 1 et 2 de l'ACP.
+
+```{r }
+  # Axes 1 et 2
+  plot(ACP1,choix="var")
+```
+
+Affichons maintenant les axes 2 et 3.
+
+```{r }
+  # Axes 2 et 3
+  plot(ACP1, choix="var", axes=c(2,3))
+```
+
+Et maintenant les axes 1 et 3.
+
+Affichons maintenant les axes 2 et 3.
+
+```{r }
+  # Axes 1 et 3
+  plot(ACP1, choix="var", axes=c(1,3))
+```
+
+Reaffichons le cercle des corrélation et le graphique des observations
+
+```{r }
+  par(mfrow=c(1,2))
+  # Changer le titre du graphique
+  plot(ACP1,choix="var",title="Cercle des corrélations")
+  plot(ACP1,choix="ind",title="Graphique des observations")
+```
+
+Il est observable que les variables x, y et z sont très proches, leur vecteurs sont prèsques coolinéaires. Dans le cas d'une réduction dimensionelle du je de données, ce serait probablement ces variables qui seraient concernés.
+
